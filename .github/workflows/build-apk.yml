@@ -1,0 +1,97 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Versão (auto, monotônica pelo nº do run)
+        id: ver
+        run: |
+          echo "name=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "tag=v1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Gera a plataforma Android (não versionada)
+        run: flutter create --org br.com.jodmoreira --project-name ricoh_downloader --platforms=android .
+
+      - name: Restaura nosso app (flutter create pode sobrescrever pubspec/lib)
+        run: git checkout -- pubspec.yaml lib
+
+      - name: Nome do app no launcher
+        run: sed -i 's/android:label="ricoh_downloader"/android:label="Ricoh DL"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Garante permissões no manifesto
+        run: |
+          f=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>\n    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />\n    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>\n    <application#' "$f"
+
+      - name: Dependências
+        run: flutter pub get
+
+      - name: Build APK (release, versão ${{ steps.ver.outputs.name }})
+        run: flutter build apk --release --build-name=${{ steps.ver.outputs.name }} --build-number=${{ github.run_number }}
+
+      - name: Assina com a chave estável
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KS_B64" ]; then
+            echo "::warning::Secrets de assinatura ausentes (ANDROID_KEYSTORE_*). Fazendo upload do APK debug/não assinado."
+            echo "APK=build/app/outputs/flutter-apk/app-release.apk" >> "$GITHUB_ENV"
+          else
+            echo "$KS_B64" | base64 -d > /tmp/ks.p12
+            APKSIGNER=$(find "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools" -name apksigner -type f | sort -V | tail -1)
+            IN=build/app/outputs/flutter-apk/app-release.apk
+            OUT=build/app/outputs/flutter-apk/ricoh-downloader-${{ steps.ver.outputs.name }}.apk
+            "$APKSIGNER" sign \
+              --ks /tmp/ks.p12 --ks-pass "pass:$KS_PASS" \
+              --ks-key-alias "$KS_ALIAS" --key-pass "pass:$KS_PASS" \
+              --out "$OUT" "$IN"
+            "$APKSIGNER" verify --print-certs "$OUT"
+            rm -f /tmp/ks.p12
+            echo "APK=$OUT" >> "$GITHUB_ENV"
+          fi
+
+      - name: Publica a Release (o Obtainium acompanha)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.ver.outputs.tag }}" "$APK" \
+            --repo "${{ github.repository }}" \
+            --title "Ricoh Downloader ${{ steps.ver.outputs.name }}" \
+            --notes "Build automático. $(date -u +%Y-%m-%d)." \
+            --latest \
+          || gh release upload "${{ steps.ver.outputs.tag }}" "$APK" --repo "${{ github.repository }}" --clobber
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ricoh-downloader-apk
+          path: ${{ env.APK }}
+          if-no-files-found: error
