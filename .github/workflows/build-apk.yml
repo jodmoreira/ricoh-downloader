@@ -45,6 +45,101 @@ jobs:
       - name: Nome do app no launcher
         run: sed -i 's/android:label="ricoh_downloader"/android:label="Ricoh DL"/' android/app/src/main/AndroidManifest.xml
 
+      - name: Injeta código nativo (MainActivity.kt)
+        run: |
+          mkdir -p android/app/src/main/kotlin/br/com/jodmoreira/ricoh_downloader
+          cat << 'EOF' > android/app/src/main/kotlin/br/com/jodmoreira/ricoh_downloader/MainActivity.kt
+          package br.com.jodmoreira.ricoh_downloader
+
+          import android.net.ConnectivityManager
+          import android.net.NetworkCapabilities
+          import android.net.NetworkRequest
+          import android.net.wifi.WifiNetworkSpecifier
+          import android.os.Build
+          import androidx.annotation.NonNull
+          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
+          import android.net.Network
+
+          class MainActivity: FlutterActivity() {
+              private val CHANNEL = "ricoh/wifi"
+              private var currentNetworkCallback: ConnectivityManager.NetworkCallback? = null
+
+              override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+                      if (call.method == "connect") {
+                          val ssid = call.argument<String>("ssid")
+                          val password = call.argument<String>("password")
+                          if (ssid != null && password != null) {
+                              connectToWifi(ssid, password, result)
+                          } else {
+                              result.error("INVALID_ARGS", "SSID and password are required", null)
+                          }
+                      } else if (call.method == "disconnect") {
+                          disconnectWifi(result)
+                      } else {
+                          result.notImplemented()
+                      }
+                  }
+              }
+
+              private fun connectToWifi(ssid: String, password: String, result: MethodChannel.Result) {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                      val specifier = WifiNetworkSpecifier.Builder()
+                          .setSsid(ssid)
+                          .setWpa2Passphrase(password)
+                          .build()
+
+                      val request = NetworkRequest.Builder()
+                          .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                          .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                          .setNetworkSpecifier(specifier)
+                          .build()
+
+                      val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                      
+                      currentNetworkCallback = object : ConnectivityManager.NetworkCallback() {
+                          override fun onAvailable(network: Network) {
+                              super.onAvailable(network)
+                              connectivityManager.bindProcessToNetwork(network)
+                              runOnUiThread {
+                                  try { result.success(true) } catch (e: Exception) {}
+                              }
+                          }
+                          override fun onUnavailable() {
+                              super.onUnavailable()
+                              runOnUiThread {
+                                  try { result.error("UNAVAILABLE", "Could not connect to the network", null) } catch (e: Exception) {}
+                              }
+                          }
+                      }
+                      
+                      try {
+                          connectivityManager.requestNetwork(request, currentNetworkCallback!!)
+                      } catch (e: SecurityException) {
+                          result.error("SECURITY_EXCEPTION", e.message, null)
+                      }
+                  } else {
+                      result.error("UNSUPPORTED", "Android 10+ required", null)
+                  }
+              }
+
+              private fun disconnectWifi(result: MethodChannel.Result) {
+                  val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      connectivityManager.bindProcessToNetwork(null)
+                  }
+                  currentNetworkCallback?.let {
+                      try { connectivityManager.unregisterNetworkCallback(it) } catch (e: Exception) {}
+                      currentNetworkCallback = null
+                  }
+                  result.success(true)
+              }
+          }
+          EOF
+
       - name: Garante permissões no manifesto
         run: |
           f=android/app/src/main/AndroidManifest.xml

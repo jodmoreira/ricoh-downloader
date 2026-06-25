@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:wifi_iot/wifi_iot.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -101,27 +101,15 @@ class _HomePageState extends State<HomePage> {
 
     if (ssid.isNotEmpty && pass.isNotEmpty) {
       setState(() {
-        _statusMessage = 'Conectando ao Wi-Fi $ssid...';
+        _statusMessage = 'Conectando ao Wi-Fi $ssid... (Mantenha o app aberto)';
       });
       try {
-        final connected = await WiFiForIoTPlugin.connect(
-          ssid,
-          password: pass,
-          joinOnce: true,
-          security: NetworkSecurity.WPA,
-          withInternet: false,
-        );
-        if (!connected) {
-          setState(() {
-            _statusMessage = 'Falha ao conectar no Wi-Fi. Certifique-se que a câmera está ligada e o celular não recusou a rede sem internet.';
-            _isDownloading = false;
-          });
-          return;
-        }
-        await Future.delayed(const Duration(seconds: 4));
+        const platform = MethodChannel('ricoh/wifi');
+        await platform.invokeMethod('connect', {'ssid': ssid, 'password': pass});
+        await Future.delayed(const Duration(seconds: 2));
       } catch (e) {
         setState(() {
-          _statusMessage = 'Erro de Wi-Fi: $e';
+          _statusMessage = 'Erro de Wi-Fi: $e\nSe falhar repetidamente, conecte manualmente no celular e deixe SSID em branco.';
           _isDownloading = false;
         });
         return;
@@ -232,7 +220,8 @@ class _HomePageState extends State<HomePage> {
 
     if (ssid.isNotEmpty && pass.isNotEmpty) {
       try {
-        await WiFiForIoTPlugin.disconnect();
+        const platform = MethodChannel('ricoh/wifi');
+        await platform.invokeMethod('disconnect');
       } catch (_) {}
     }
 
