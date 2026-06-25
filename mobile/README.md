@@ -1,28 +1,28 @@
 # Ricoh Downloader App
 
-App Android em Flutter para baixar fotos de uma Ricoh GR IIIx (via Wi-Fi).
+An Android App in Flutter to download photos from a Ricoh GR IIIx (via Wi-Fi).
 
-Assim como no `ped-admin`, este repositório guarda apenas o código principal em Flutter (`lib/` e `pubspec.yaml`), para evitar versionar os gigabytes de binários gerados pelo Gradle no diretório `android/`.
-A Action do GitHub cria a estrutura do Android no momento do build e já injeta as permissões necessárias.
+Just like in `ped-admin`, this repository only stores the main Flutter code (`lib/` and `pubspec.yaml`) to avoid versioning gigabytes of Gradle-generated binaries in the `android/` directory.
+The GitHub Action creates the Android structure at build time and injects the necessary permissions.
 
-## Funcionalidades
-- Input do SSID e da Senha do Wi-Fi da câmera.
-- Conecta-se automaticamente à rede Wi-Fi fornecida.
-- Lista e compara o histórico de fotos baixadas (evita baixar duplicatas).
-- Faz o download de fotos para a galeria pública do Android (`Pictures/Ricoh`).
+## Features
+- Input for the camera's Wi-Fi SSID and Password.
+- Connects automatically to the provided Wi-Fi network.
+- Lists and compares the history of downloaded photos (prevents downloading duplicates).
+- Downloads photos directly to the public Android gallery (`Pictures/Ricoh`).
 
-## CI/CD e Obtainium
+## CI/CD and Obtainium
 
-1. **Obtainium**: Instale no celular e aponte para este repositório do Github. O Obtainium acompanhará as **Releases** geradas automaticamente quando o código for atualizado.
-2. **Build Automático**: Ao enviar commits (push) que modifiquem `mobile/` ou `build-apk.yml`, o Github Actions construirá o `.apk` e criará uma Release.
+1. **Obtainium**: Install it on your phone and point it to this GitHub repository. Obtainium will track the **Releases** that are automatically generated whenever the code is updated.
+2. **Automatic Build**: When you push commits modifying `mobile/` or `build-apk.yml`, GitHub Actions will build the `.apk` and create a Release.
 
-### Assinatura (para Atualizações automáticas do Obtainium)
+### Signing (for automatic Obtainium Updates)
 
-Para que o Android permita atualizações sem precisar desinstalar o app (mantendo as configurações gravadas), é preciso que as versões sejam assinadas com o mesmo Keystore. 
+In order for Android to allow updates without having to uninstall the app (thus keeping your saved settings), the versions must be signed with the same Keystore.
 
-Vá em **Settings -> Secrets and variables -> Actions** e crie os Secrets de repositório:
-- `ANDROID_KEYSTORE_BASE64`: A base64 do seu keystore `.p12` ou `.jks` (`base64 keystore.jks`)
-- `ANDROID_KEYSTORE_PASSWORD`: A senha do seu keystore
-- `ANDROID_KEY_ALIAS`: O alias da sua chave (ex: `ricoh-dl`)
+Go to **Settings -> Secrets and variables -> Actions** in your repository and create the following repository Secrets:
+- `ANDROID_KEYSTORE_BASE64`: The base64 encoding of your `.p12` or `.jks` keystore (`base64 keystore.jks`)
+- `ANDROID_KEYSTORE_PASSWORD`: The password for your keystore
+- `ANDROID_KEY_ALIAS`: The alias of your key (e.g., `ricoh-dl`)
 
-Se esses secrets não estiverem presentes, o Github Actions ainda vai buildar e fazer upload de um APK debug, mas as atualizações via Obtainium poderão não substituir o app antigo com sucesso.
+If these secrets are not present, GitHub Actions will still build and upload an unsigned/debug APK, but future updates via Obtainium might fail to seamlessly overwrite the old app.

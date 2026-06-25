@@ -1,81 +1,81 @@
 # Ricoh Downloader
 
-Um conjunto de ferramentas para automatizar o download de fotos da câmera **Ricoh GR IIIx** via conexão Wi-Fi. 
+A set of tools to automate the download of photos from the **Ricoh GR IIIx** camera via Wi-Fi. 
 
-Este projeto contém duas soluções para o mesmo objetivo:
-1. **App Android (Flutter)**: Para sincronizar as fotos direto no celular.
-2. **Script Python**: Para baixar as fotos via linha de comando no computador.
+This project contains two solutions for the same goal:
+1. **Android App (Flutter)**: To sync photos directly to your smartphone.
+2. **Python Script**: To download photos via command line on your computer.
 
-Ambas as versões mantêm um histórico local do que já foi baixado, permitindo rodá-las múltiplas vezes sem duplicar arquivos na galeria ou na pasta.
+Both versions keep a local history of what has already been downloaded, allowing you to run them multiple times without duplicating files in your gallery or folder.
 
 ---
 
-## 📱 1. App para Android (Celular)
+## 📱 1. Android App
 
-O app permite baixar as fotos da câmera sem cabos e de forma autônoma. Basta preencher as informações do Wi-Fi na interface, e ele conectará automaticamente à câmera, baixará as novas fotos para a pasta `Pictures/Ricoh` (visível na galeria do sistema) e desconectará sozinho.
+The app allows you to download photos from the camera wirelessly and autonomously. Just fill in the Wi-Fi information in the interface, and it will automatically connect to the camera, download the new photos to the `Pictures/Ricoh` folder (visible in the system gallery), and disconnect on its own.
 
-### Como instalar via Obtainium (Recomendado)
-O aplicativo não está na Google Play Store. Cada atualização do código gera um arquivo instalável `.apk` automaticamente na aba de "Releases" deste GitHub. 
+### How to install via Obtainium (Recommended)
+The application is not on the Google Play Store. Every code update automatically generates an installable `.apk` file in the "Releases" tab of this GitHub repository.
 
-A melhor forma de instalar e receber atualizações é pelo [Obtainium](https://github.com/ImranR98/Obtainium):
-1. Instale o **Obtainium** no seu Android.
-2. Abra o Obtainium, vá em **Add App** e cole o link deste repositório:
+The best way to install and receive updates is through [Obtainium](https://github.com/ImranR98/Obtainium):
+1. Install **Obtainium** on your Android device.
+2. Open Obtainium, go to **Add App** and paste the link to this repository:
    `https://github.com/jodmoreira/ricoh-downloader`
-3. Clique em **Add**. O Obtainium vai localizar a versão mais recente na aba Releases e oferecer para instalar o aplicativo (chamado "Ricoh DL").
-4. Nas próximas vezes que uma atualização do app for lançada aqui no Github, o Obtainium vai notificar você e realizar a atualização com um toque.
+3. Click **Add**. Obtainium will find the latest version in the Releases tab and offer to install the application (named "Ricoh DL").
+4. Next time an app update is released here on Github, Obtainium will notify you and perform the update with a single tap.
 
-> **Instalação Manual:** Se não quiser usar o Obtainium, basta abrir este repositório no Github pelo celular, clicar em **Releases**, baixar o arquivo `.apk` da versão mais recente e tocar para instalar (é necessário autorizar instalação de fontes desconhecidas no Android).
+> **Manual Installation:** If you don't want to use Obtainium, just open this repository on Github from your phone, click on **Releases**, download the `.apk` file of the latest version, and tap to install (you need to allow installation from unknown sources on Android).
 
-### Uso básico
-1. Ligue a conexão sem fio da sua Ricoh (ela criará uma rede Wi-Fi que começa com `RICOH_...`).
-2. Abra o app "Ricoh DL".
-3. Insira o nome da rede (SSID) e a senha (vistos na tela da sua câmera).
-4. Clique em **Sincronizar Fotos**. O app vai pedir permissões para mexer no Wi-Fi e salvar arquivos nas fotos, e fará todo o processo sozinho!
+### Basic Usage
+1. Turn on the wireless connection of your Ricoh (it will create a Wi-Fi network that starts with `RICOH_...`).
+2. Open the "Ricoh DL" app.
+3. Enter the network name (SSID) and password (shown on your camera screen).
+4. Click on **Sincronizar Fotos** (Sync Photos). The app will ask for permissions to manage Wi-Fi and save files in your photos, and will handle the entire process by itself!
 
-Para mais detalhes técnicos da versão mobile, veja o diretório [`mobile/`](./mobile/).
+For more technical details about the mobile version, see the [`mobile/`](./mobile/) directory.
 
 ---
 
-## 💻 2. Script para Computador (Python)
+## 💻 2. Computer Script (Python)
 
-Uma solução voltada para rodar em **Linux**, **Windows** ou **WSL2** para sincronizar suas fotos com um diretório do seu PC.
+A solution aimed at running on **Linux**, **Windows**, or **WSL2** to sync your photos to a directory on your PC.
 
-### Pré-requisitos
+### Prerequisites
 - Python 3.8+
-- Estar conectado de alguma forma na rede da câmera (manualmente pelo PC, ou automaticamente se for Windows/WSL informando SSID e senha para que o script cuide do `netsh`).
+- Be connected in some way to the camera's network (manually by the PC, or automatically if using Windows/WSL by providing SSID and password so the script can handle `netsh`).
 
-### Instalação
+### Installation
 
-Abra o terminal, clone o repositório e instale as dependências:
+Open the terminal, clone the repository, and install the dependencies:
 ```bash
 git clone https://github.com/jodmoreira/ricoh-downloader.git
 cd ricoh-downloader
 
-# Recomenda-se criar um ambiente virtual (opcional, mas boa prática)
+# It is recommended to create a virtual environment (optional, but a good practice)
 python3 -m venv .venv
-source .venv/bin/activate  # ou .venv\Scripts\activate no Windows
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
 pip install -r requirements.txt
 ```
 
-### Uso básico
+### Basic Usage
 
-**Modo Manual (Qualquer SO):**
-Conecte seu computador no Wi-Fi da câmera manualmente, depois rode:
+**Manual Mode (Any OS):**
+Connect your computer to the camera's Wi-Fi manually, then run:
 ```bash
-python ricoh_downloader.py --dest ~/Imagens/Ricoh
+python ricoh_downloader.py --dest ~/Pictures/Ricoh
 ```
 
-**Modo Automático (Windows / WSL2):**
-Deixe o script gerenciar o Wi-Fi e se conectar automaticamente na câmera pra você. Passe o SSID e a senha:
+**Automatic Mode (Windows / WSL2):**
+Let the script manage the Wi-Fi and connect automatically to the camera for you. Pass the SSID and password:
 ```bash
-python ricoh_downloader.py --ssid RICOH_XXXXXX --password A-SENHA-DA-CAMERA --dest ~/Imagens/Ricoh
+python ricoh_downloader.py --ssid RICOH_XXXXXX --password THE-CAMERA-PASSWORD --dest ~/Pictures/Ricoh
 ```
-> *Dica*: No lugar de passar a senha no comando (que fica salva no histórico do terminal), você pode usar `--password-env RICOH_WIFI_PASS` e definir a variável de ambiente.
+> *Tip*: Instead of passing the password in the command (which is saved in the terminal history), you can use `--password-env RICOH_WIFI_PASS` and define the environment variable.
 
-**Opções úteis:**
-- `--dry-run`: Verifica e lista quais fotos seriam baixadas, sem baixar nada.
-- `--reset-history`: Ignora o banco de dados e tenta baixar tudo novamente (arquivos locais com o mesmo nome serão sobrescritos se ainda existirem, útil para forçar reparo).
-- `--ext JPG --ext DNG`: Baixa apenas formatos de arquivos específicos.
+**Useful options:**
+- `--dry-run`: Checks and lists which photos would be downloaded, without actually downloading anything.
+- `--reset-history`: Ignores the database and tries to download everything again (local files with the same name will be overwritten if they still exist, useful to force a repair).
+- `--ext JPG --ext DNG`: Downloads only specific file formats.
 
-O histórico de downloads fica salvo em um banquinho leve `download_history.db` no diretório onde o script rodar.
+The download history is saved in a lightweight database `download_history.db` in the directory where the script is run.
